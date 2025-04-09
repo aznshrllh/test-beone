@@ -165,4 +165,35 @@ export default class ProductModel {
       throw new Error("Failed to find product by name");
     }
   }
+
+  static async updateProductStock(productId: string, quantityToReduce: number) {
+    try {
+      const collection = await this.collection();
+      const productObjectId = new ObjectId(productId);
+
+      // First, get the current product to check stock
+      const product = await this.getProductById(productId);
+
+      if (product.stock < quantityToReduce) {
+        throw new Error(`Insufficient stock for product ${product.name}`);
+      }
+
+      const result = await collection.updateOne(
+        { _id: productObjectId },
+        {
+          $inc: { stock: -quantityToReduce },
+          $set: { updatedAt: new Date() },
+        }
+      );
+
+      if (result.modifiedCount === 0) {
+        throw new Error("Failed to update product stock");
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error updating product stock:", error);
+      throw error;
+    }
+  }
 }

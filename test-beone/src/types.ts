@@ -54,6 +54,7 @@ export type TCartItem = {
   image?: string;
   subtotal: number;
 };
+
 export type TCart = {
   _id?: ObjectId | string;
   userId?: ObjectId | string;

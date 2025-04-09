@@ -106,4 +106,28 @@ export default class UserModel {
       throw new Error("Failed to fetch all users");
     }
   }
+
+  static async updateLoyaltyPoints(userId: string, pointsToAdd: number) {
+    try {
+      const collection = await this.collection();
+      const userObjectId = new ObjectId(userId);
+
+      const result = await collection.updateOne(
+        { _id: userObjectId },
+        {
+          $inc: { loyaltyPoint: pointsToAdd },
+          $set: { updatedAt: new Date() },
+        }
+      );
+
+      if (result.modifiedCount === 0) {
+        throw new Error("Failed to update loyalty points");
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error updating loyalty points:", error);
+      throw new Error("Failed to update loyalty points");
+    }
+  }
 }
