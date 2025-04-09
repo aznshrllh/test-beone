@@ -46,10 +46,18 @@ export type TTransaction = {
   isDeleted?: boolean;
 };
 
+export type TCartItem = {
+  productId: string | ObjectId;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  subtotal: number;
+};
 export type TCart = {
   _id?: ObjectId | string;
   userId?: ObjectId | string;
-  items: TProduct[];
+  items: TCartItem[];
   totalPrice: number;
   createdAt?: Date;
   updatedAt?: Date;
