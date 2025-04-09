@@ -37,10 +37,10 @@ export async function middleware(request: NextRequest) {
     // Untuk rute terproteksi, periksa token autentikasi
     const cookieStore = await cookies();
 
-    console.log("Cookie Store:", cookieStore);
+    // console.log("Cookie Store:", cookieStore);
     const authorization = cookieStore.get("authorization")?.value;
 
-    console.log("Authorization:", authorization);
+    // console.log("Authorization:", authorization);
 
     if (!authorization) {
       // Jika tidak ada token dan rute memerlukan autentikasi
@@ -58,7 +58,7 @@ export async function middleware(request: NextRequest) {
 
     // Validasi token
     const token = authorization?.split(" ")[1];
-    console.log("Token:", token);
+    // console.log("Token:", token);
 
     if (!token) {
       return new Response(

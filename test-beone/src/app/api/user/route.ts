@@ -2,9 +2,10 @@ import UserModel from "@/db/models/userModel";
 import errorHandler from "@/helpers/errorHandler";
 import { AppError } from "@/types";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const user = await UserModel.getAllUsers();
+    const userId = request.headers.get("x-user-id") as string;
+    const user = await UserModel.getUserById(userId);
 
     if (!user) {
       throw new Error("User not found");

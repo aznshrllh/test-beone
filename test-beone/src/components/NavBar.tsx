@@ -22,12 +22,21 @@ export default function NavBar() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [authDebug, setAuthDebug] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Mark component as mounted to prevent hydration issues
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Extract cookie checking logic
   const checkCookies = useCallback(() => {
     try {
+      if (typeof document === "undefined")
+        return { hasAuth: false, cookieValue: "", allCookies: {} };
+
       const cookies = document.cookie.split(";").reduce((acc, cookie) => {
         const [key, value] = cookie.trim().split("=");
         acc[key] = value;
@@ -47,14 +56,12 @@ export default function NavBar() {
 
   // Check authentication status
   const checkAuth = useCallback(async () => {
+    if (!isMounted) return;
+
     setIsLoading(true);
     try {
       // Check cookies first
       const { hasAuth } = checkCookies();
-
-      if (process.env.NODE_ENV === "development") {
-        console.log("Auth cookie present:", hasAuth);
-      }
 
       // If no auth cookie, don't even try to fetch the profile
       if (!hasAuth) {
@@ -74,7 +81,6 @@ export default function NavBar() {
         headers: {
           Accept: "application/json",
         },
-        // Add cache: 'no-store' to prevent caching
         cache: "no-store",
       });
 
@@ -93,7 +99,7 @@ export default function NavBar() {
         }
       } else {
         // Clear any stale cookies if the server rejects the authentication
-        if (response.status === 401) {
+        if (response.status === 401 && typeof document !== "undefined") {
           document.cookie =
             "authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         }
@@ -120,10 +126,12 @@ export default function NavBar() {
     } finally {
       setIsLoading(false);
     }
-  }, [checkCookies]);
+  }, [checkCookies, isMounted]);
 
   // Custom event handler for logout
   useEffect(() => {
+    if (!isMounted) return;
+
     // Define the event handler for logout
     const handleLogout = () => {
       console.log("Logout event detected");
@@ -132,8 +140,10 @@ export default function NavBar() {
         userName: "",
       });
       // Manually clear the cookie
-      document.cookie =
-        "authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      if (typeof document !== "undefined") {
+        document.cookie =
+          "authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      }
     };
 
     // Add event listener
@@ -143,12 +153,14 @@ export default function NavBar() {
     return () => {
       window.removeEventListener("app:logout", handleLogout);
     };
-  }, []);
+  }, [isMounted]);
 
   // Fetch authentication on mount and when path changes
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth, pathname]);
+    if (isMounted) {
+      checkAuth();
+    }
+  }, [checkAuth, pathname, isMounted]);
 
   // For development debugging
   const debugAuth = async () => {
@@ -171,6 +183,29 @@ export default function NavBar() {
     }
   };
 
+  // Render only client-side content after mounting
+  if (!isMounted) {
+    return (
+      <nav className="bg-primary text-primary-foreground shadow-md">
+        <div className="container mx-auto py-3 px-4 flex justify-between items-center">
+          <Link href="/" className="font-bold text-xl flex items-center gap-2">
+            BeOne Shop
+          </Link>
+          <div className="flex items-center gap-6">
+            <div className="hidden sm:flex space-x-6">
+              <Link href="/products" className="hover:underline font-medium">
+                Products
+              </Link>
+            </div>
+            <div className="h-10 flex items-center animate-pulse">
+              <div className="h-2.5 bg-gray-300 rounded w-24"></div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <nav className="bg-primary text-primary-foreground shadow-md">
       <div className="container mx-auto py-3 px-4 flex justify-between items-center">
@@ -185,9 +220,34 @@ export default function NavBar() {
             <Link href="/products" className="hover:underline font-medium">
               Products
             </Link>
-            <Link href="/cart" className="hover:underline font-medium">
-              Cart
-            </Link>
+
+            {auth.isLoggedIn && (
+              <>
+                <Link href="/cart" className="hover:underline font-medium">
+                  Cart
+                </Link>
+                <Link href="/profile" className="hover:underline font-medium">
+                  Profile
+                </Link>
+
+                {auth.role === "admin" && (
+                  <>
+                    <Link
+                      href="/admin/manage-products"
+                      className="hover:underline font-medium"
+                    >
+                      Manage Products
+                    </Link>
+                    <Link
+                      href="/admin/manage-users"
+                      className="hover:underline font-medium"
+                    >
+                      Manage Users
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
 
           {/* Authentication UI */}
@@ -243,9 +303,28 @@ export default function NavBar() {
           <Link href="/products" className="text-sm font-medium">
             Products
           </Link>
-          <Link href="/cart" className="text-sm font-medium">
-            Cart
-          </Link>
+
+          {auth.isLoggedIn && (
+            <>
+              <Link href="/cart" className="text-sm font-medium">
+                Cart
+              </Link>
+              <Link href="/profile" className="text-sm font-medium">
+                Profile
+              </Link>
+            </>
+          )}
+
+          {auth.isLoggedIn && auth.role === "admin" && (
+            <>
+              <Link
+                href="/admin/manage-products"
+                className="text-sm font-medium"
+              >
+                Manage
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>

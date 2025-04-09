@@ -57,7 +57,17 @@ export default class UserModel {
     try {
       const collection = await this.collection();
       const userObjectId = new ObjectId(userId);
-      const user = await collection.findOne({ _id: userObjectId });
+      const user = await collection.findOne(
+        { _id: userObjectId },
+        {
+          projection: {
+            password: 0,
+            isDeleted: 0,
+            createdAt: 0,
+            updatedAt: 0,
+          },
+        }
+      );
 
       if (!user) {
         throw new Error("User not found");
