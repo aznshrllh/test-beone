@@ -53,6 +53,8 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<{ [key: string]: boolean }>({});
   const [authError, setAuthError] = useState(false);
+  const [showCheckoutConfirm, setShowCheckoutConfirm] = useState(false);
+  const [checkoutProcessing, setCheckoutProcessing] = useState(false);
   const router = useRouter();
 
   const fetchCart = useCallback(async () => {
@@ -291,6 +293,65 @@ export default function CartPage() {
       });
     } finally {
       setProcessing((prev) => ({ ...prev, clearAll: false }));
+    }
+  };
+
+  const handleCheckout = async () => {
+    setCheckoutProcessing(true);
+
+    try {
+      const response = await fetch("/api/user/transaction", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (response.status === 401) {
+        setAuthError(true);
+        toast.error("Authentication required", {
+          description: "Please login to complete checkout",
+          action: {
+            label: "Login",
+            onClick: () =>
+              router.push(`/login?returnUrl=${encodeURIComponent("/cart")}`),
+          },
+        });
+        return;
+      }
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Reset the cart state
+        setCart({
+          items: [],
+          totalItems: 0,
+          totalPrice: 0,
+        });
+
+        toast.success("Order placed successfully!", {
+          description: `You earned ${data.transactionDetails.loyaltyPointEarned} loyalty points with this purchase.`,
+        });
+
+        // Redirect to order confirmation or orders page
+        setTimeout(() => {
+          router.push("/products");
+        }, 2000);
+      } else {
+        toast.error("Checkout failed", {
+          description: data.message || "Failed to process your order",
+        });
+      }
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      toast.error("Checkout failed", {
+        description: "An unexpected error occurred",
+      });
+    } finally {
+      setCheckoutProcessing(false);
+      setShowCheckoutConfirm(false);
     }
   };
 
@@ -576,14 +637,39 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                <Button className="w-full mt-4" size="lg">
-                  Proceed to Checkout
+                <Button
+                  className="w-full mt-4"
+                  size="lg"
+                  onClick={() => setShowCheckoutConfirm(true)}
+                  disabled={checkoutProcessing}
+                >
+                  {checkoutProcessing ? "Processing..." : "Proceed to Checkout"}
                 </Button>
               </CardContent>
             </Card>
           </div>
         </div>
       )}
+
+      <AlertDialog
+        open={showCheckoutConfirm}
+        onOpenChange={setShowCheckoutConfirm}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Checkout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to proceed with the checkout?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCheckout}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
