@@ -227,9 +227,9 @@ export default function NavBar() {
                             icon={<User className="h-4 w-4" />}
                           />
                           <MenuItem
-                            href="/orders"
-                            title="Order History"
-                            description="View your past orders"
+                            href="/transaction"
+                            title="Transaction History"
+                            description="View your past Transactions"
                             icon={<Package className="h-4 w-4" />}
                           />
                         </ul>
