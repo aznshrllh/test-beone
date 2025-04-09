@@ -40,14 +40,7 @@ export default class UserModel {
         isDeleted: false,
       };
 
-      // Check if user already exists
-      const existingUser = await collection.findOne({
-        $or: [
-          { email: newUser.email },
-          { username: newUser.username },
-          { phoneNumber: newUser.phoneNumber },
-        ],
-      });
+      const existingUser = await this.findUserByEmail(verifiedUser.email);
       if (existingUser) {
         throw new Error("User already exists");
       }
@@ -81,13 +74,9 @@ export default class UserModel {
     try {
       const collection = await this.collection();
 
-      const user = collection.findOne({
+      const user = await collection.findOne({
         email,
       });
-
-      if (!user) {
-        throw new Error("User not found");
-      }
 
       return user;
     } catch (error) {
