@@ -6,11 +6,19 @@ import { AppError } from "./types";
 
 export async function middleware(request: NextRequest) {
   try {
-    // Pub routes
+    // Pub routes yang tidak memerlukan autentikasi
     const publicPaths = [
       "/api/public/:path*",
       "/api/bridge/login",
       "/api/bridge/register",
+    ];
+
+    // Rute yang memerlukan role admin
+    const adminOnlyPaths = [
+      "/api/products",
+      "/api/products/:path*",
+      "/api/users",
+      "/api/users/:path*",
     ];
 
     // Cek apakah rute saat ini adalah rute publik
@@ -44,7 +52,7 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    //Validasi token
+    // Validasi token
     const token = authorization?.split(" ")[1];
 
     if (!token) {
@@ -79,6 +87,27 @@ export async function middleware(request: NextRequest) {
     requestHeaders.set("x-user-email", decoded.email);
     requestHeaders.set("x-user-role", decoded.role);
 
+    // Verifikasi akses admin jika diperlukan
+    const isAdminOnlyPath = adminOnlyPaths.some((path) => {
+      const pathPattern = new RegExp(
+        `^${path.replace(/\*/g, ".*").replace(/:\w+/g, "[^/]+")}$`
+      );
+      return pathPattern.test(request.nextUrl.pathname);
+    });
+
+    // Jika rute memerlukan admin dan user bukan admin, tolak akses
+    if (isAdminOnlyPath && decoded.role !== "admin") {
+      return new Response(
+        JSON.stringify({
+          message: "Forbidden: Admin access required",
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Lanjutkan dengan request yang sudah diverifikasi
     return NextResponse.next({
       request: {
@@ -98,11 +127,20 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // User routes (protected)
+    // Admin routes (hanya untuk admin)
+    "/api/products",
+    "/api/products/:path*",
+    "/api/users",
+    "/api/users/:path*",
+
+    // User routes (untuk semua user terautentikasi)
     "/api/user/:path*",
+    "/api/user/cart",
+    "/api/user/transaction",
+    "/api/user/products",
 
     // Auth routes (mixed - login/register are public, user info is protected)
-    "/api/auth/:path*",
+    "/api/bridge/:path*",
 
     // Public routes (no protection needed but still processed by middleware)
     "/api/public/:path*",
