@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import LogoutButton from "./logoutButton";
 import { User } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface AuthState {
   isLoggedIn: boolean;
@@ -23,6 +23,7 @@ export default function NavBar() {
   const [isLoading, setIsLoading] = useState(true);
   const [authDebug, setAuthDebug] = useState("");
   const router = useRouter();
+  const pathname = usePathname();
 
   // Extract cookie checking logic
   const checkCookies = useCallback(() => {
@@ -55,13 +56,26 @@ export default function NavBar() {
         console.log("Auth cookie present:", hasAuth);
       }
 
-      // Always try to fetch the profile, let the server handle auth
+      // If no auth cookie, don't even try to fetch the profile
+      if (!hasAuth) {
+        setAuth({
+          isLoggedIn: false,
+          userName: "",
+        });
+        setAuthDebug("No auth cookie");
+        setIsLoading(false);
+        return;
+      }
+
+      // If we have an auth cookie, try to fetch the profile
       const response = await fetch("/api/user/profile", {
         method: "GET",
         credentials: "include",
         headers: {
           Accept: "application/json",
         },
+        // Add cache: 'no-store' to prevent caching
+        cache: "no-store",
       });
 
       if (response.ok) {
@@ -78,6 +92,12 @@ export default function NavBar() {
           setAuthDebug(`Logged in as: ${data.user?.email || "Unknown"}`);
         }
       } else {
+        // Clear any stale cookies if the server rejects the authentication
+        if (response.status === 401) {
+          document.cookie =
+            "authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        }
+
         setAuth({
           isLoggedIn: false,
           userName: "",
@@ -102,20 +122,33 @@ export default function NavBar() {
     }
   }, [checkCookies]);
 
-  // Fetch authentication on mount and when storage changes
+  // Custom event handler for logout
   useEffect(() => {
-    checkAuth();
-
-    // Cross-tab logout synchronization
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "logout") {
-        checkAuth();
-      }
+    // Define the event handler for logout
+    const handleLogout = () => {
+      console.log("Logout event detected");
+      setAuth({
+        isLoggedIn: false,
+        userName: "",
+      });
+      // Manually clear the cookie
+      document.cookie =
+        "authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [checkAuth]);
+    // Add event listener
+    window.addEventListener("app:logout", handleLogout);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("app:logout", handleLogout);
+    };
+  }, []);
+
+  // Fetch authentication on mount and when path changes
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth, pathname]);
 
   // For development debugging
   const debugAuth = async () => {
@@ -168,7 +201,12 @@ export default function NavBar() {
                 <User className="h-4 w-4" />
                 <span className="text-sm font-medium">{auth.userName}</span>
               </div>
-              <LogoutButton variant="destructive" size="sm" showText={true} />
+              <LogoutButton
+                variant="destructive"
+                size="sm"
+                showText={true}
+                onLogoutSuccess={() => checkAuth()}
+              />
             </div>
           ) : (
             <div className="flex items-center gap-3">

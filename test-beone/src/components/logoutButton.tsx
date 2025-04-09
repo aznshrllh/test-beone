@@ -27,14 +27,17 @@ interface LogoutButtonProps {
     | "link";
   size?: "default" | "sm" | "lg" | "icon";
   showText?: boolean;
+  onLogoutSuccess?: () => void;
 }
 
 export default function LogoutButton({
   variant = "ghost",
   size = "default",
   showText = true,
+  onLogoutSuccess,
 }: LogoutButtonProps) {
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -43,9 +46,23 @@ export default function LogoutButton({
       const result = await HandleLogout();
 
       if (result.success) {
-        // Force refresh for auth state
+        // Close the dialog
+        setOpen(false);
+
+        // Dispatch a custom event that can be caught by other components
+        window.dispatchEvent(new Event("app:logout"));
+
+        // Clear the auth cookie from document.cookie
+        document.cookie =
+          "authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+        // Call the onLogoutSuccess callback if provided
+        if (onLogoutSuccess) {
+          onLogoutSuccess();
+        }
+
+        // Finally redirect to login page
         router.push("/login");
-        router.refresh();
       } else {
         console.error("Logout failed");
       }
@@ -57,7 +74,7 @@ export default function LogoutButton({
   };
 
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <Button variant={variant} size={size}>
           <LogOut className={`h-4 w-4 ${showText ? "mr-2" : ""}`} />
