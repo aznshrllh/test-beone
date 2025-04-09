@@ -9,7 +9,7 @@ export type CustomError = {
 
 export type AppError = CustomError | Error | ZodError;
 
-export type Product = {
+export type TProduct = {
   _id?: ObjectId | string;
   name: string;
   price: number;
@@ -21,7 +21,7 @@ export type Product = {
   isDeleted?: boolean;
 };
 
-export type User = {
+export type TUser = {
   _id?: ObjectId | string;
   firstName: string;
   lastName: string;
@@ -36,10 +36,10 @@ export type User = {
   isDeleted?: boolean;
 };
 
-export type Transaction = {
+export type TTransaction = {
   _id?: ObjectId | string;
   userId?: ObjectId | string;
-  items: Product[];
+  items: TProduct[];
   totalPrice: number;
   loyaltyPointEarned: number;
   createdAt?: Date;
