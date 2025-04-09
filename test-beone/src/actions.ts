@@ -27,7 +27,7 @@ export async function HandleLogin(form: TUserLogin) {
 
     const cookieStore = await cookies();
 
-    cookieStore.set("authorization", `Bearer ${data.acces_token}`);
+    cookieStore.set("authorization", `Bearer ${data.access_token}`);
 
     return {
       success: true,
@@ -82,6 +82,7 @@ export async function HandleLogout() {
 
     return {
       success: true,
+      message: "Logged out successfully",
     };
   } catch (error) {
     console.error("Logout error", error);

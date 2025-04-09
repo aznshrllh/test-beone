@@ -43,7 +43,7 @@ export default function LoginPage() {
         });
 
         // Redirect to dashboard after successful login
-        router.push("/dashboard");
+        router.push("/cart");
       } else {
         toast.error("Login gagal", {
           description: result.message || "Email atau password tidak valid",

@@ -34,13 +34,15 @@ export async function POST(request: Request) {
       role: existingUser.role?.toString() as "admin" | "user",
     });
 
+    console.log("Access Token from api login:", access_token);
+
+    const response = NextResponse.json(
+      { message: "Login successful", access_token },
+      { status: 200 }
+    );
+
     const cookieStore = await cookies();
     cookieStore.set({ name: "authorization", value: `Bearer ${access_token}` });
-
-    const response = NextResponse.json({
-      message: "Login successful",
-      status: 200,
-    });
 
     return response;
   } catch (error) {

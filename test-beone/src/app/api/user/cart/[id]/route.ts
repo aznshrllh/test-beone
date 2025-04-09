@@ -4,15 +4,12 @@ import ProductModel from "@/db/models/productModel";
 import errorHandler from "@/helpers/errorHandler";
 import { AppError } from "@/types";
 
-/**
- * GET: Mendapatkan item cart berdasarkan ID produk
- */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const productId = params.id;
+    const { id: productId } = await params;
     const userId = request.headers.get("x-user-id");
 
     if (!userId) {
@@ -41,18 +38,13 @@ export async function GET(
   }
 }
 
-/**
- * PATCH: Update jumlah item di cart berdasarkan ID produk
- */
-/**
- * PATCH: Update jumlah item di cart berdasarkan ID produk
- */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const productId = params.id;
+    const { id: productId } = await params;
+
     const userId = request.headers.get("x-user-id");
 
     if (!userId) {
@@ -66,11 +58,8 @@ export async function PATCH(
       throw { message: "Quantity is required", status: 400 };
     }
 
-    if (isNaN(Number(quantity)) || Number(quantity) < 1) {
-      throw { message: "Quantity must be a positive number", status: 400 };
-    }
-
     // Cek produk dan validasi stock
+    console.log("productId", productId);
     const product = await ProductModel.getProductById(productId);
     if (!product) {
       throw { message: "Product not found", status: 404 };
@@ -104,15 +93,12 @@ export async function PATCH(
   }
 }
 
-/**
- * DELETE: Menghapus item dari cart berdasarkan ID produk
- */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const productId = params.id;
+    const { id: productId } = await params;
     const userId = request.headers.get("x-user-id");
 
     if (!userId) {
@@ -135,9 +121,6 @@ export async function DELETE(
   }
 }
 
-/**
- * PUT: Tambahkan item baru atau update item yang sudah ada di cart
- */
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
