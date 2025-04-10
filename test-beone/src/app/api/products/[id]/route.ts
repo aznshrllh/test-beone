@@ -1,4 +1,5 @@
 import ProductModel from "@/db/models/productModel";
+import UserModel from "@/db/models/userModel";
 import errorHandler from "@/helpers/errorHandler";
 import { AppError } from "@/types";
 
@@ -7,6 +8,22 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = req.headers.get("x-user-id") as string;
+
+    if (!userId) {
+      throw { message: "Unauthorized: User ID not found", status: 401 };
+    }
+
+    const user = await UserModel.getUserById(userId);
+
+    if (!user) {
+      throw { message: "User not found", status: 404 };
+    }
+
+    if (user.role !== "admin") {
+      throw { message: "Unauthorized", status: 403 };
+    }
+
     const { id } = await params;
     const product = await ProductModel.getProductById(id);
 
@@ -31,6 +48,22 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = req.headers.get("x-user-id") as string;
+
+    if (!userId) {
+      throw { message: "Unauthorized: User ID not found", status: 401 };
+    }
+
+    const user = await UserModel.getUserById(userId);
+
+    if (!user) {
+      throw { message: "User not found", status: 404 };
+    }
+
+    if (user.role !== "admin") {
+      throw { message: "Unauthorized", status: 403 };
+    }
+
     const { id } = await params;
     const body = await req.json();
 
@@ -77,6 +110,22 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = req.headers.get("x-user-id") as string;
+
+    if (!userId) {
+      throw { message: "Unauthorized: User ID not found", status: 401 };
+    }
+
+    const user = await UserModel.getUserById(userId);
+
+    if (!user) {
+      throw { message: "User not found", status: 404 };
+    }
+
+    if (user.role !== "admin") {
+      throw { message: "Unauthorized", status: 403 };
+    }
+
     const { id } = await params;
 
     const deletedProduct = await ProductModel.deleteProduct(id);
@@ -102,6 +151,22 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = req.headers.get("x-user-id") as string;
+
+    if (!userId) {
+      throw { message: "Unauthorized: User ID not found", status: 401 };
+    }
+
+    const user = await UserModel.getUserById(userId);
+
+    if (!user) {
+      throw { message: "User not found", status: 404 };
+    }
+
+    if (user.role !== "admin") {
+      throw { message: "Unauthorized", status: 403 };
+    }
+
     const { id } = await params;
     const body = await req.json();
 

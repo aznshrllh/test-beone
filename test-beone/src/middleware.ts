@@ -137,6 +137,7 @@ export const config = {
     "/api/products/:path*",
     "/api/users",
     "/api/users/:path*",
+    "/api/admin/:path*",
 
     // User routes (untuk semua user terautentikasi)
     "/api/user/:path*",

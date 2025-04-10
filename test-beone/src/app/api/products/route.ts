@@ -3,26 +3,6 @@ import UserModel from "@/db/models/userModel";
 import errorHandler from "@/helpers/errorHandler";
 import { AppError } from "@/types";
 
-export async function GET() {
-  try {
-    const products = await ProductModel.getAllProducts();
-
-    if (!products) {
-      throw new Error("Products not found");
-    }
-
-    return Response.json(
-      {
-        message: "Products retrieved successfully",
-        products,
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    return errorHandler(error as AppError);
-  }
-}
-
 export async function POST(request: Request) {
   try {
     const userId = request.headers.get("x-user-id") as string;
@@ -75,6 +55,34 @@ export async function POST(request: Request) {
         product: result,
       },
       { status: 201 }
+    );
+  } catch (error) {
+    return errorHandler(error as AppError);
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const userId = request.headers.get("x-user-id") as string;
+
+    if (!userId) {
+      throw { message: "Missing user ID", status: 400 };
+    }
+
+    const user = await UserModel.getUserById(userId);
+
+    if (user.role !== "admin") {
+      throw { message: "Unauthorized", status: 403 };
+    }
+
+    const products = await ProductModel.getAllProducts();
+
+    return Response.json(
+      {
+        message: "Products retrieved successfully",
+        products,
+      },
+      { status: 200 }
     );
   } catch (error) {
     return errorHandler(error as AppError);
